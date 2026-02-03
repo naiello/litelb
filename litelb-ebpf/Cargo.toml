@@ -1,0 +1,18 @@
+[package]
+name = "litelb-ebpf"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+litelb-common = { path = "../litelb-common" }
+
+aya-ebpf = { workspace = true }
+aya-log-ebpf = { workspace = true }
+network-types = { workspace = true }
+
+[build-dependencies]
+which = { workspace = true }
+
+[[bin]]
+name = "litelb"
+path = "src/main.rs"
