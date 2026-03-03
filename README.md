@@ -1,5 +1,7 @@
 # litelb
 
+Experimental TCP/UDP load balancer implemented with eBPF XDP and aya-rs.
+
 ## Prerequisites
 
 1. stable rust toolchains: `rustup toolchain install stable`

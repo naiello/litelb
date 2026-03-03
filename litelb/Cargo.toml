@@ -6,7 +6,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
-litelb-common = { path = "../litelb-common", features = ["user"] }
+litelb-common = { path = "../litelb-common", features = ["user", "std"] }
 
 anyhow = { workspace = true, default-features = true }
 aya = { workspace = true }

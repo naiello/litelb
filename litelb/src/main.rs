@@ -1,6 +1,12 @@
+use std::net::Ipv4Addr;
+
 use anyhow::Context as _;
-use aya::programs::{Xdp, XdpFlags};
+use aya::{
+    maps::Array,
+    programs::{Xdp, XdpFlags},
+};
 use clap::Parser;
+use litelb_common::{Config, Service};
 #[rustfmt::skip]
 use log::{debug, warn};
 use tokio::signal;
@@ -53,8 +59,45 @@ async fn main() -> anyhow::Result<()> {
             });
         }
     }
+
+    let config = Config {
+        vip: Ipv4Addr::new(192, 168, 16, 3),
+        port: 1234,
+        nr_svc: 3,
+    };
+    let mut configmap: Array<_, Config> = ebpf
+        .map_mut("CONFIG")
+        .context("expected to find CONFIG map")?
+        .try_into()
+        .context("expected CONFIG map to be an array")?;
+    configmap
+        .set(0, config, 0)
+        .context("unable to load ebpf config")?;
+
+    let mut svcmap: Array<_, Service> = ebpf
+        .map_mut("SERVICES")
+        .context("expected to find SERVICE map")?
+        .try_into()
+        .context("expected SERVICE map to be an array")?;
+
+    // TODO: Make svc addresses configurable
+    // TODO: Accept IPs, periodic arp for the L2 addrs
+    let svc1 = Service { mac: [0; 6] };
+    svcmap.set(0, svc1, 0).context("failed to set svc1")?;
+
+    let svc2 = Service { mac: [0; 6] };
+    svcmap.set(1, svc2, 0).context("failed to set svc2")?;
+
+    let svc3 = Service { mac: [0; 6] };
+    svcmap.set(2, svc3, 0).context("failed to set svc3")?;
+
     let Opt { iface } = opt;
-    let program: &mut Xdp = ebpf.program_mut("litelb").unwrap().try_into()?;
+    let program: &mut Xdp = ebpf
+        .program_mut("litelb")
+        .context("could not load litelb ebpf program")?
+        .try_into()
+        .context("expected litelb to be ebpf program")?;
+
     program.load()?;
     program.attach(&iface, XdpFlags::default())
         .context("failed to attach the XDP program with default flags - try changing XdpFlags::default() to XdpFlags::SKB_MODE")?;
