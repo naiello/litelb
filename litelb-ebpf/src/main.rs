@@ -9,6 +9,7 @@ use aya_ebpf::{
     maps::Array,
     programs::XdpContext,
 };
+use aya_log_ebpf::error;
 use litelb_common::{Config, Conn, Service};
 use litelb_ebpf::{hash::FxHasher, mem::ptr_at, packet::TransportHeader};
 use network_types::{
@@ -69,7 +70,12 @@ fn get_l4_hdr(
 }
 
 #[inline]
-fn route(eth_hdr: *mut EthHdr, ip_hdr: *mut Ipv4Hdr, l4_hdr: &TransportHeader) -> u32 {
+fn route(
+    ctx: &XdpContext,
+    eth_hdr: *mut EthHdr,
+    ip_hdr: *mut Ipv4Hdr,
+    l4_hdr: &TransportHeader,
+) -> u32 {
     let conn = Conn {
         src_ip: unsafe { (*ip_hdr).src_addr() },
         dst_ip: unsafe { (*ip_hdr).dst_addr() },
@@ -89,6 +95,7 @@ fn route(eth_hdr: *mut EthHdr, ip_hdr: *mut Ipv4Hdr, l4_hdr: &TransportHeader) -
 
         XDP_TX
     } else {
+        error!(ctx, "no services available, dropping packet");
         XDP_DROP
     }
 }
@@ -105,7 +112,7 @@ fn handle(ctx: XdpContext) -> Result<u32, &'static str> {
         if let Some(l4_hdr) = get_l4_hdr(&ctx, ipv4_hdr)?
             && is_dst_lb(ipv4_hdr, &l4_hdr)
         {
-            return Ok(route(eth_hdr, ipv4_hdr, &l4_hdr));
+            return Ok(route(&ctx, eth_hdr, ipv4_hdr, &l4_hdr));
         }
     }
 
