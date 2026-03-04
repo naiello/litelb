@@ -2,7 +2,46 @@
 
 Experimental TCP/UDP load balancer implemented with eBPF XDP and aya-rs.
 
-## Prerequisites
+litelb uses a direct-server return scheme - the backend server returns the response to the client directly,
+without the return traffic traversing the load balancer again. The presence of the load-balancer will be transparent
+to the backend service, so the IP address seen by the backend server is the "true" IP of the client.
+
+## Backend Server Configuration
+
+On each backend server, run the following steps (most of these steps are not persistent, and will need to be
+re-applied after a reboot. The sysctl settings may optionally be persisted in `/etc/sysctl.d/dsr.conf`.
+
+### Add the VIP to the loopback interface
+```bash
+ip addr add <VIP-IP>/32 dev lo
+ip link set lo up
+```
+
+### Disable ARP for the VIP
+```bash
+# Only respond to ARP if target IP is local to the receiving interface
+sysctl -w net.ipv4.conf.all.arp_ignore=1
+sysctl -w net.ipv4.conf.default.arp_ignore=1
+
+# Only advertise best local address for ARP requests
+sysctl -w net.ipv4.conf.all.arp_announce=2
+sysctl -w net.ipv4.conf.default.arp_announce=2
+```
+
+### Ensure reverse path filtering won't drop traffic
+
+```bash
+sysctl -w net.ipv4.conf.all.rp_filter=0
+sysctl -w net.ipv4.conf.default.rp_filter=0
+```
+
+### Ensure the service binds to the VIP
+
+This is service-specific, but ensure the service is listening either on `0.0.0.0` or `<VIP-IP>`.
+
+## Development
+
+### Prerequisites
 
 1. stable rust toolchains: `rustup toolchain install stable`
 1. nightly rust toolchains: `rustup toolchain install nightly --component rust-src`
@@ -11,7 +50,7 @@ Experimental TCP/UDP load balancer implemented with eBPF XDP and aya-rs.
 1. (if cross-compiling) C toolchain: (e.g.) [`brew install filosottile/musl-cross/musl-cross`](https://github.com/FiloSottile/homebrew-musl-cross) (on macOS)
 1. bpf-linker: `cargo install bpf-linker` (`--no-default-features` on macOS)
 
-## Build & Run
+### Build & Run
 
 Use `cargo build`, `cargo check`, etc. as normal. Run your program with:
 
@@ -22,7 +61,7 @@ cargo run --release
 Cargo build scripts are used to automatically build the eBPF correctly and include it in the
 program.
 
-## Cross-compiling on macOS
+### Cross-compiling on macOS
 
 Cross compilation should work on both Intel and Apple Silicon Macs.
 
