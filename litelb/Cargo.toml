@@ -11,9 +11,9 @@ litelb-common = { path = "../litelb-common", features = ["user", "std"] }
 anyhow = { workspace = true, default-features = true }
 aya = { workspace = true }
 aya-log = { workspace = true }
-env_logger = { workspace = true }
 libc = { workspace = true }
 log = { workspace = true }
+pretty_env_logger = { workspace = true }
 tokio = { workspace = true, features = [
     "macros",
     "rt",
@@ -21,6 +21,8 @@ tokio = { workspace = true, features = [
     "net",
     "signal",
 ] }
+tokio-graceful = { workspace = true }
+tokio-util = { workspace = true, features = ["rt"] }
 clap = { workspace = true, features = ["derive"] }
 [build-dependencies]
 anyhow = { workspace = true }

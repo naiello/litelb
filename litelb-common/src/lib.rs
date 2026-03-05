@@ -7,7 +7,7 @@ use core::net::Ipv4Addr;
 pub struct Config {
     pub vip: Ipv4Addr,
     pub port: u16,
-    pub nr_svc: u8,
+    pub nr_svc: usize,
 }
 
 #[cfg(feature = "std")]
