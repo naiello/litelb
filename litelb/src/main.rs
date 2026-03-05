@@ -16,7 +16,7 @@ struct Opt {
 async fn main() -> Result<()> {
     let opt = Opt::parse();
 
-    init_logging();
+    init_logging()?;
     try_set_rlimit();
 
     let config = Config {
@@ -33,6 +33,8 @@ async fn main() -> Result<()> {
     let Opt { iface } = opt;
     let shutdown = Shutdown::default();
     let _ebpf = Ebpf::start(config, vec![svc1, svc2, svc3], iface, shutdown.guard()).await?;
+
+    log::info!("startup complete");
 
     shutdown
         .shutdown_with_limit(Duration::from_secs(30))
@@ -56,12 +58,14 @@ fn try_set_rlimit() {
     }
 }
 
-fn init_logging() {
+fn init_logging() -> Result<()> {
     if env::var("LITELB_LOG").is_err() {
         unsafe {
             env::set_var("LITELB_LOG", "info");
         }
     }
 
-    pretty_env_logger::init_timed();
+    pretty_env_logger::try_init_timed_custom_env("LITELB_LOG")?;
+
+    Ok(())
 }

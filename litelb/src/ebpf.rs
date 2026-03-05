@@ -93,7 +93,7 @@ impl Ebpf {
                 .attach(&iface, XdpFlags::default())
                 .context("failed to attach XDP program to interface")?;
 
-            log::info!("eBPF program runnning on interface {}", iface);
+            log::info!("eBPF program running on interface {}", iface);
             ready_tx
                 .send(())
                 .map_err(|_| anyhow!("failed to send ready signal"))?;
